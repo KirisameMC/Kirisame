@@ -1,0 +1,65 @@
+plugins {
+    id("java")
+    id("com.gradleup.shadow") version "9.2.2"
+}
+
+group = "org.kirisame.mc"
+version = "1.0-SNAPSHOT"
+
+repositories {
+    mavenCentral()
+    maven { url = uri("https://repo.spongepowered.org/maven/") }
+}
+
+dependencies {
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    compileOnly("org.projectlombok:lombok:1.18.42")
+    annotationProcessor("org.projectlombok:lombok:1.18.42")
+
+    //logging
+    implementation("org.tinylog:tinylog-api:2.7.0")
+    implementation("org.tinylog:tinylog-impl:2.7.0")
+
+    implementation("com.typesafe:config:1.4.3")
+    implementation("com.google.code.gson:gson:2.13.2")
+    implementation("com.google.guava:guava:33.5.0-jre")
+
+    implementation("io.github.classgraph:classgraph:4.8.184")
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation("commons-io:commons-io:2.21.0")
+
+    implementation(project(":minecraft-api"))
+
+}
+
+tasks {
+    withType<Jar> {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
+
+    shadowJar {
+        archiveBaseName.set("kirisame")
+        archiveClassifier.set("") // 不加 "-all"
+        archiveVersion.set("1.0.0")
+
+        manifest {
+            attributes["Main-Class"] = "org.kirisame.mc.Main" // 改成你的主类
+        }
+
+        mergeServiceFiles()
+
+        exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    }
+
+    build {
+        dependsOn(shadowJar)
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+}
