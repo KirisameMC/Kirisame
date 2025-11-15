@@ -43,7 +43,7 @@ tasks {
 
     shadowJar {
         archiveBaseName.set("kirisame")
-        archiveClassifier.set("") // 不加 "-all"
+        archiveClassifier.set("-all")
         archiveVersion.set("1.0.0")
 
         manifest {
