@@ -1,3 +1,7 @@
 rootProject.name = "Kirisame"
-include("examplePlugin")
 include("minecraft-api")
+
+
+if (System.getenv("JITPACK") == null) {
+    include("examplePlugin")
+}

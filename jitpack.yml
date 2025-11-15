@@ -1,5 +1,8 @@
 jdk:
   - openjdk21
+env:
+  JITPACK: "true"
+
 build:
   commands:
-    - ./gradlew :build
+    - ./gradlew clean build
