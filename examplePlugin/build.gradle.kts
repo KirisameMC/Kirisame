@@ -18,6 +18,7 @@ dependencies {
     compileOnly(project(":"))
 
     compileOnly(files("libs/server-25w45a_unobfuscated.jar"))
+    compileOnly(files("libs/brigadier-1.3.10.jar"))
 }
 
 tasks.test {
@@ -42,4 +43,11 @@ tasks {
     build {
         dependsOn(shadowJar)
     }
+}
+
+tasks.register<Copy>("applyNewPlugin") {
+    dependsOn(tasks.build)
+
+    from(file("build/libs/kirisame-example-1.0.0.jar"))
+    into("../workdir/kirisame_plugins")
 }

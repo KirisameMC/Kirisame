@@ -29,6 +29,7 @@ public class KirisameMC {
     @Getter
     MinecraftInstance minecraftInstance;
     @Getter
+    volatile
     ClassLoader minecraftClassLoader;
     @Getter
     Object server;
@@ -91,6 +92,9 @@ public class KirisameMC {
     }
 
     public void _init_plugins(){
+        while (minecraftClassLoader == null){
+            Thread.onSpinWait();
+        }
         PluginManager.loadPlugins();
     }
 
@@ -114,7 +118,7 @@ public class KirisameMC {
                 }
             }
         }
-        getServer:while (minecraftInstance.isRunning()){
+        getServer:while (checkServerRunning(serverThread.get())){
             if (server == null){
                 if (!serverThread.get().isAlive()) {
                     minecraftInstance.setRunning(false);
@@ -136,15 +140,21 @@ public class KirisameMC {
                 }
             }
         }
-        PluginManager.onLoad();
-        while (minecraftInstance.isRunning()){
-            if (!serverThread.get().isAlive()) {
-                minecraftInstance.setRunning(false);
-                return;
-            }
+        while ((!PluginManager.loaded) && checkServerRunning(serverThread.get())){
+            Thread.onSpinWait();
         }
-
+        PluginManager.onLoad();
+        while (checkServerRunning(serverThread.get())){
+            Thread.onSpinWait();
+        }
         PluginManager.onUnload();
+    }
+
+    private boolean checkServerRunning(Thread server){
+        if (!server.isAlive()){
+            minecraftInstance.setRunning(false);
+        }
+        return minecraftInstance.isRunning();
     }
 
     public void init() {

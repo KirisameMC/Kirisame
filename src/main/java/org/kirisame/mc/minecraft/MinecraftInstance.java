@@ -19,7 +19,7 @@ public class MinecraftInstance {
     String minecraftVersion;
     @Getter
     @Setter
-    boolean running = false;
+    volatile boolean running = false;
 
     public MinecraftInstance(){
         jarFileLoc = KirisameMC.getInstance().getConfigRoot().getString("main");

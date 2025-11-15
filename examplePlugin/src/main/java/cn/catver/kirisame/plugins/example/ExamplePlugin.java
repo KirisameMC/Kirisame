@@ -1,5 +1,8 @@
 package cn.catver.kirisame.plugins.example;
 
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerPlayer;
 import org.kirisame.mc.KirisameMC;
@@ -18,6 +21,20 @@ public class ExamplePlugin implements KirisamePlugin {
     public void onLoad(KirisameMC kirisameMC) {
         EventBus.register(this);
         server = (DedicatedServer) kirisameMC.getServer();
+
+        server.getCommands().getDispatcher().register(
+                LiteralArgumentBuilder.<CommandSourceStack>literal("example")
+                        .requires(stack->!stack.isPlayer())
+                        .executes(context -> {
+                            if (!context.getSource().isPlayer()){
+                                log$info("You are successfully run a command register by Kirisame!");
+                            }
+                            return 1;
+                        })
+        );
+        server.getPlayerList().getPlayers().forEach(server.getCommands()::sendCommands);
+
+        log$info("Example Plugin Loading...");
     }
 
     @EventHandler
@@ -29,6 +46,7 @@ public class ExamplePlugin implements KirisamePlugin {
                 ServerPlayer player = server.getPlayerList().getPlayer(message.getPlayerName());
                 if (player != null){
                     log$info("Player {} ip address is {}", player.getStringUUID(),player.getIpAddress());
+                    player.sendSystemMessage(Component.literal("This is server is using Kirisame!"),true);
                 }
             }
         });

@@ -3,6 +3,7 @@ package org.kirisame.mc;
 import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import org.kirisame.mc.api.KirisamePlugin;
 import org.kirisame.mc.api.KirisamePluginInfo;
@@ -15,6 +16,9 @@ import java.util.HashMap;
 
 public class PluginManager {
     static HashMap<String,PluginLoadInfo> plugins = new HashMap<>();
+
+    @Getter
+    static volatile boolean loaded = false;
 
     private static ClassLoader getPluginClassLoader(){
         return new ClassLoader() {
@@ -86,6 +90,7 @@ public class PluginManager {
                 }
             }
         }
+        loaded = true;
     }
 
     public static void onLoad(){
