@@ -1,5 +1,7 @@
 package org.kirisame.mc;
 
+import org.tinylog.Logger;
+
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
@@ -8,7 +10,7 @@ import java.util.List;
 public class Main {
     static KirisameMC kirisameMC;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         if (!isAddOpensEnabled()) {
             try {
                 restartWithAddOpens(args);
@@ -20,6 +22,7 @@ public class Main {
 
         PrintStream originalOut = System.out;
         PrintStream originalErr = System.err;
+        InputStream originalIn = System.in;
 
         // 简单 Tee 输出流
         OutputStream teeStream = new OutputStream() {
@@ -42,6 +45,32 @@ public class Main {
 
         PrintStream teeOut = new PrintStream(teeStream, true);
 
+        PipedInputStream newSystemIn = new PipedInputStream();
+        PipedOutputStream inputOfSystemIn = new PipedOutputStream(newSystemIn);
+
+        Thread inputRedirectThread = new Thread(() -> {
+            BufferedReader br = new BufferedReader(new InputStreamReader(originalIn));
+            String line;
+
+            try {
+                while ((line = br.readLine()) != null) {
+                    if (line.startsWith("!!")) {
+                        Logger.info("Custom Command {}", line);
+                    } else {
+                        inputOfSystemIn.write((line + "\n").getBytes());
+                        inputOfSystemIn.flush();
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, "Kirisame-Console-Handle");
+
+        inputRedirectThread.setDaemon(true);
+        inputRedirectThread.start();
+
+
+        System.setIn(newSystemIn);
         System.setOut(teeOut);
 
 
