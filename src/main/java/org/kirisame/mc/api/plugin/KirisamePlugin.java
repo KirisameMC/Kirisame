@@ -1,4 +1,4 @@
-package org.kirisame.mc.api;
+package org.kirisame.mc.api.plugin;
 
 import org.kirisame.mc.KirisameMC;
 import org.tinylog.Logger;

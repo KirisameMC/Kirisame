@@ -5,8 +5,8 @@ import io.github.classgraph.ClassInfoList;
 import io.github.classgraph.ScanResult;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.kirisame.mc.api.KirisamePlugin;
-import org.kirisame.mc.api.KirisamePluginInfo;
+import org.kirisame.mc.api.plugin.KirisamePlugin;
+import org.kirisame.mc.api.plugin.KirisamePluginInfo;
 import org.tinylog.Logger;
 
 import java.io.File;

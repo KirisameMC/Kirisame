@@ -1,4 +1,4 @@
-package org.kirisame.mc.api;
+package org.kirisame.mc.api.plugin;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -1,5 +1,6 @@
 package org.kirisame.mc;
 
+import org.kirisame.mc.api.command.CommandManager;
 import org.tinylog.Logger;
 
 import java.io.*;
@@ -55,7 +56,11 @@ public class Main {
             try {
                 while ((line = br.readLine()) != null) {
                     if (line.startsWith("!!")) {
-                        Logger.info("Custom Command {}", line);
+                        String all = line.replaceAll("!!", "");
+                        int i = CommandManager.execute(all.split(" "));
+                        if (i != 1) {
+                            Logger.error("Command Error: " + i);
+                        }
                     } else {
                         inputOfSystemIn.write((line + "\n").getBytes());
                         inputOfSystemIn.flush();
