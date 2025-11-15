@@ -15,7 +15,7 @@ import org.kirisame.mc.event.impl.ConsoleMessageEvent;
 
 @KirisamePluginInfo(name = "ExamplePlugin", version = "1.0.0", author = "Hikari", minecraftVersion = "25w45a_unobfuscated")
 public class ExamplePlugin implements KirisamePlugin {
-    DedicatedServer server;
+    static DedicatedServer server;
 
     @Override
     public void onLoad(KirisameMC kirisameMC) {
@@ -33,6 +33,17 @@ public class ExamplePlugin implements KirisamePlugin {
                         })
         );
         server.getPlayerList().getPlayers().forEach(server.getCommands()::sendCommands);
+
+        server.getCommands().getDispatcher().register(LiteralArgumentBuilder.<CommandSourceStack>literal("suicide")
+                .requires(CommandSourceStack::isPlayer)
+                .executes(ctx->{
+                    ServerPlayer player = (ServerPlayer) ctx.getSource().getEntity();
+                    assert player != null;
+                    kirisameMC.getMinecraftWrapper().getCommandWrapper().execute("kill "+player.getPlainTextName());
+                    return 1;
+                }));
+
+        new TpaImpl().init(kirisameMC);
 
         log$info("Example Plugin Loading...");
     }

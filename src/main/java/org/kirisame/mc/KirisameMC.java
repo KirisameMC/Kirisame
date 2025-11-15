@@ -6,6 +6,8 @@ import com.typesafe.config.ConfigRenderOptions;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
 import org.kirisame.mc.console.ConsoleParser;
+import org.kirisame.mc.event.EventBus;
+import org.kirisame.mc.event.impl.KirisameLoopEvent;
 import org.kirisame.mc.minecraft.MinecraftInstance;
 import org.kirisame.mc.reflect.ThreadReflect;
 import org.kirisame.mc.server.WrapperFactory;
@@ -145,7 +147,7 @@ public class KirisameMC {
         }
         PluginManager.onLoad();
         while (checkServerRunning(serverThread.get())){
-            Thread.onSpinWait();
+            EventBus.post(KirisameLoopEvent.getInstance());
         }
         PluginManager.onUnload();
     }

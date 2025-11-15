@@ -1,6 +1,7 @@
 package org.kirisame.mc.event;
 
 import lombok.experimental.UtilityClass;
+import org.tinylog.Logger;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -52,7 +53,7 @@ public class EventBus {
                         lm.method().invoke(lm.owner(), event);
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Logger.error(e, "An error occurred while processing an event to method {}:{}",lm.method().getDeclaringClass().getName(),lm.method().getName());
                 }
             }
         }

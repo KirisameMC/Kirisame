@@ -52,6 +52,6 @@ public class MinecraftInstance {
     }
 
     public Object getMinecraftServer() throws Exception {
-        return null;
+        return KirisameMC.getInstance().getServer();
     }
 }
