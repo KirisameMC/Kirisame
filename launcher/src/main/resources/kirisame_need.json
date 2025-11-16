@@ -1,0 +1,5 @@
+{
+  "jvm_options": [
+    "--add-opens=java.base/java.lang=ALL-UNNAMED"
+  ]
+}

@@ -8,7 +8,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/Kirisame-Agent" />
             <option value="$PROJECT_DIR$/examplePlugin" />
+            <option value="$PROJECT_DIR$/launcher" />
             <option value="$PROJECT_DIR$/minecraft-api" />
           </set>
         </option>

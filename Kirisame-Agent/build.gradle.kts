@@ -8,7 +8,6 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repo.spongepowered.org/maven/") }
 }
 
 dependencies {
@@ -19,21 +18,13 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
-    //logging
-    implementation("org.tinylog:tinylog-api:2.7.0")
-    implementation("org.tinylog:tinylog-impl:2.7.0")
+    implementation("net.bytebuddy:byte-buddy:1.18.1")
 
-    implementation("com.typesafe:config:1.4.3")
-    implementation("com.google.code.gson:gson:2.13.2")
-    implementation("com.google.guava:guava:33.5.0-jre")
+    compileOnly(project(":"))
+}
 
-    implementation("io.github.classgraph:classgraph:4.8.184")
-
-    // https://mvnrepository.com/artifact/commons-io/commons-io
-    implementation("commons-io:commons-io:2.21.0")
-
-    implementation(project(":minecraft-api"))
-
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks {
@@ -42,12 +33,12 @@ tasks {
     }
 
     shadowJar {
-        archiveBaseName.set("kirisame")
+        archiveBaseName.set("kirisame-agent")
         archiveClassifier.set("all")
         archiveVersion.set(version.toString())
 
         manifest {
-            attributes["Main-Class"] = "org.kirisame.mc.Main" // 改成你的主类
+            attributes["Premain-Class"] = "org.kirisame.mc.agent.Agent"
         }
 
         mergeServiceFiles()
@@ -60,6 +51,9 @@ tasks {
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
+tasks.register<Copy>("applyNewAgent"){
+    dependsOn(tasks.build)
+
+    from(tasks.shadowJar.get().archiveFile.get().asFile)
+    into("../workdir")
 }

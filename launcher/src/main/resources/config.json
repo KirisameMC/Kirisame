@@ -1,0 +1,7 @@
+{
+  "kirisame_jar": "kirisame.jar",
+  "agent_jar": "kirisame-agent.jar",
+  "java_executable": "java",
+  "jvm_options": [],
+  "game_options": ["--nogui"]
+}

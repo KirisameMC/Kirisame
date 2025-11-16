@@ -1,6 +1,7 @@
 plugins {
     id("java")
     id("com.gradleup.shadow") version "9.2.2"
+    application
 }
 
 group = "org.kirisame.mc"
@@ -8,7 +9,6 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repo.spongepowered.org/maven/") }
 }
 
 dependencies {
@@ -24,16 +24,12 @@ dependencies {
     implementation("org.tinylog:tinylog-impl:2.7.0")
 
     implementation("com.typesafe:config:1.4.3")
-    implementation("com.google.code.gson:gson:2.13.2")
-    implementation("com.google.guava:guava:33.5.0-jre")
-
-    implementation("io.github.classgraph:classgraph:4.8.184")
-
     // https://mvnrepository.com/artifact/commons-io/commons-io
     implementation("commons-io:commons-io:2.21.0")
+}
 
-    implementation(project(":minecraft-api"))
-
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks {
@@ -42,12 +38,12 @@ tasks {
     }
 
     shadowJar {
-        archiveBaseName.set("kirisame")
+        archiveBaseName.set("kirisame-launcher")
         archiveClassifier.set("all")
         archiveVersion.set(version.toString())
 
         manifest {
-            attributes["Main-Class"] = "org.kirisame.mc.Main" // 改成你的主类
+            attributes["Main-Class"] = "org.kirisame.mc.launcher.Main"
         }
 
         mergeServiceFiles()
@@ -60,6 +56,23 @@ tasks {
     }
 }
 
-tasks.test {
-    useJUnitPlatform()
+application {
+    mainClass.set("org.kirisame.mc.launcher.Main")
+}
+
+tasks.register<Copy>("copyKirisame"){
+    dependsOn(rootProject.tasks.build, ":Kirisame-Agent:build")
+
+    from("../build/libs/kirisame-"+rootProject.version.toString()+"-all.jar")
+    into("workdir")
+
+    from("../Kirisame-Agent/build/libs/Kirisame-Agent-"+project(":Kirisame-Agent").version.toString()+"-all.jar")
+    into("workdir")
+}
+
+tasks.named<JavaExec>("run") {
+    dependsOn("copyKirisame")
+
+    standardInput = System.`in`
+    workingDir = file("workdir")
 }

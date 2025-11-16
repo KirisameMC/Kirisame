@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.kirisame.mc"
-version = "1.0-SNAPSHOT"
+version = "1.0"
 
 repositories {
     mavenCentral()
@@ -36,8 +36,8 @@ tasks {
 
     shadowJar {
         archiveBaseName.set("kirisame-example")
-        archiveClassifier.set("")
-        archiveVersion.set("1.0.0")
+        archiveClassifier.set("all")
+        archiveVersion.set(version.toString())
 
         mergeServiceFiles()
 
@@ -52,6 +52,6 @@ tasks {
 tasks.register<Copy>("applyNewPlugin") {
     dependsOn(tasks.build)
 
-    from(file("build/libs/kirisame-example-1.0.0.jar"))
+    from(file("build/libs/kirisame-example-$version-all.jar"))
     into("../workdir/kirisame_plugins")
 }
