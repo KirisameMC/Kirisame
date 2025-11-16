@@ -14,7 +14,6 @@ public class Main {
         PrintStream originalErr = System.err;
         InputStream originalIn = System.in;
 
-        // 简单 Tee 输出流
         OutputStream teeStream = new OutputStream() {
             private final StringBuilder lineBuffer = new StringBuilder();
 
@@ -56,7 +55,7 @@ public class Main {
                     }
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Logger.error(e, "Error when redirecting input");
             }
         }, "Kirisame-Console-Handle");
 

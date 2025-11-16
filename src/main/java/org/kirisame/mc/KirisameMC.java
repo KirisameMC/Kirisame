@@ -57,7 +57,7 @@ public class KirisameMC {
         Config resource = ConfigFactory.parseResources("config.json");
         Config file = null;
         try {
-            file = ConfigFactory.parseFile(new File("config.json"));
+            file = ConfigFactory.parseFile(new File("kirisame.config.json"));
         }catch (Exception ignored){
 
         }
@@ -79,7 +79,7 @@ public class KirisameMC {
                         .setComments(false)
         );
 
-        FileUtils.write(new File("config.json"), rendered, StandardCharsets.UTF_8);
+        FileUtils.write(new File("kirisame.config.json"), rendered, StandardCharsets.UTF_8);
     }
 
     public void _startupMinecraft() throws Exception {
