@@ -33,7 +33,7 @@ public class CommandManager {
         for (Map.Entry<KirisameCommandLabel, KirisameCommand> commandEntry : commands.entrySet()) {
             KirisameCommandLabel label = commandEntry.getKey();
             KirisameCommand command = commandEntry.getValue();
-            if (label.lookup().contains(args[0]+",")){
+            if (label.lookup().contains(args[0])){
                 return command.execute(args);
             }
         }
