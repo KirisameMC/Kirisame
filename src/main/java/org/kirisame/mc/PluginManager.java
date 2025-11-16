@@ -69,7 +69,6 @@ public class PluginManager {
 
         if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(annotation.minecraftVersion())){
             Logger.warn("Plugin {} is not compatible with this version of Minecraft Server", annotation.name());
-            return;
         }
 
         Object object = mainClass.getConstructor().newInstance();
