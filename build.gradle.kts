@@ -62,3 +62,21 @@ tasks {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.register<Copy>("release"){
+    dependsOn(
+        tasks.build,
+        project(":Kirisame-Agent").tasks.build,
+        project(":examplePlugin").tasks.build,
+        project(":launcher").tasks.build,
+    )
+
+    from(
+        tasks.shadowJar.get().outputs,
+        project(":Kirisame-Agent").tasks.shadowJar.get().outputs,
+        project(":examplePlugin").tasks.shadowJar.get().outputs,
+        project(":launcher").tasks.shadowJar.get().outputs,
+    )
+
+    into("release")
+}
