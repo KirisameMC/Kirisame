@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.kirisame.mc"
-version = "1.0"
+version = rootProject.version
 
 repositories {
     mavenCentral()

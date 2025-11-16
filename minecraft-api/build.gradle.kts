@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "org.kirisame.mc"
-version = "1.0-SNAPSHOT"
+version = rootProject.version
 
 repositories {
     mavenCentral()
