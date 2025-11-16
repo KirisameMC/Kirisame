@@ -8,7 +8,6 @@ version = "1.0"
 
 repositories {
     mavenCentral()
-    maven { url = uri("https://repo.spongepowered.org/maven/") }
 }
 
 dependencies {
