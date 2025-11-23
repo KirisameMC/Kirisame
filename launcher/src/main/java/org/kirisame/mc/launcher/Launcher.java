@@ -31,19 +31,19 @@ public class Launcher {
             config = file.withFallback(resource);
         else{
             config = resource;
-            try {
-                FileUtils.write(new File("launcher.config.json"), config.root().render(
-                        ConfigRenderOptions.defaults()
-                                .setComments(false)
-                                .setOriginComments(false)
-                                .setJson(true)
-                                .setFormatted(true)
-                ), "UTF-8");
-            } catch (IOException e) {
-                Logger.error(e, "Error when writing launcher.config.json");
-            }
         }
         config = config.resolve();
+        try {
+            FileUtils.write(new File("launcher.config.json"), config.root().render(
+                    ConfigRenderOptions.defaults()
+                            .setComments(false)
+                            .setOriginComments(false)
+                            .setJson(true)
+                            .setFormatted(true)
+            ), "UTF-8");
+        } catch (IOException e) {
+            Logger.error(e, "Error when writing launcher.config.json");
+        }
     }
 
     @SneakyThrows

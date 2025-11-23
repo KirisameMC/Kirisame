@@ -1,5 +1,6 @@
 package org.kirisame.mc;
 
+import com.google.gson.Gson;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
@@ -26,6 +27,8 @@ public class KirisameMC {
 
     @Getter
     static KirisameMC instance;
+    @Getter
+    static Gson gson = new Gson();
     @Getter
     Config configRoot;
     @Getter
@@ -57,7 +60,7 @@ public class KirisameMC {
         Config resource = ConfigFactory.parseResources("config.json");
         Config file = null;
         try {
-            file = ConfigFactory.parseFile(new File("config.json"));
+            file = ConfigFactory.parseFile(new File("kirisame.config.json"));
         }catch (Exception ignored){
 
         }
@@ -79,7 +82,7 @@ public class KirisameMC {
                         .setComments(false)
         );
 
-        FileUtils.write(new File("config.json"), rendered, StandardCharsets.UTF_8);
+        FileUtils.write(new File("kirisame.config.json"), rendered, StandardCharsets.UTF_8);
     }
 
     public void _startupMinecraft() throws Exception {
@@ -106,7 +109,7 @@ public class KirisameMC {
         while (minecraftInstance.isRunning()){
             if (serverThread.isPresent() && serverWatchdogThread.isPresent()){
                 minecraftClassLoader = serverWatchdogThread.get().getContextClassLoader();
-                Logger.info("Successfully Startup KirisameMC Platform!");
+                Logger.info("Successfully Startup KirisameMC!");
                 break;
             }
             Set<Map.Entry<Thread, StackTraceElement[]>> entrySet = Thread.getAllStackTraces().entrySet();
