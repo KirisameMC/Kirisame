@@ -1,5 +1,6 @@
 package org.kirisame.mc;
 
+import com.google.gson.Gson;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
@@ -26,6 +27,8 @@ public class KirisameMC {
 
     @Getter
     static KirisameMC instance;
+    @Getter
+    static Gson gson = new Gson();
     @Getter
     Config configRoot;
     @Getter

@@ -1,0 +1,8 @@
+{
+  "name": "example",
+  "author": "hikari",
+  "version": "1.0.0",
+  "description": "Example Plugin",
+  "minecraftVersion": "25w45a_unobfuscated",
+  "main": "cn.catver.kirisame.plugins.example.ExamplePlugin"
+}

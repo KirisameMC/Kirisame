@@ -1,16 +1,12 @@
 package org.kirisame.mc;
 
-import io.github.classgraph.ClassGraph;
-import io.github.classgraph.ClassInfoList;
-import io.github.classgraph.ScanResult;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.kirisame.mc.api.plugin.KirisamePlugin;
-import org.kirisame.mc.api.plugin.KirisamePluginInfo;
+import org.kirisame.mc.api.plugin.PluginDetails;
 import org.tinylog.Logger;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
@@ -95,19 +91,29 @@ public class PluginManager {
         return files == null ? new File[0] : files;
     }
 
-    private static Class<?> findPluginMainClass(URLClassLoader classLoader) {
-        try (ScanResult scanResult = new ClassGraph()
-                .enableClassInfo()
-                .addClassLoader(classLoader)
-                .enableAnnotationInfo()
-                .scan()) {
-            ClassInfoList classes = scanResult.getClassesWithAnnotation(KirisamePluginInfo.class.getName());
-            if (classes.size() == 1) {
-                return classes.getFirst().loadClass();
+    private static PluginDetails getPluginDetails(ClassLoader classLoader){
+        InputStream stream = classLoader.getResourceAsStream("plugin.json");
+        if (stream == null)
+            return null;
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            StringBuilder jsonContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                jsonContent.append(line);
             }
-            if (classes.size() > 1) {
-                Logger.warn("Found multiple main classes in plugin {}, which is not supported.", classLoader.getURLs()[0].getFile());
-            }
+            return KirisameMC.getGson().fromJson(jsonContent.toString(), PluginDetails.class);
+        } catch (IOException e) {
+            Logger.error(e, "Error reading plugin.json from classloader");
+            return null;
+        }
+    }
+
+    private static Class<?> findPluginMainClass(URLClassLoader classLoader, PluginDetails details) {
+        try {
+            return classLoader.loadClass(details.main());
+        } catch (ClassNotFoundException e) {
+            Logger.error(e, "Main class {} not found in plugin {}", details.main(), details.name());
             return null;
         }
     }
@@ -122,31 +128,34 @@ public class PluginManager {
                 parentLoader
         );
 
-        Class<?> mainClass = findPluginMainClass(pluginClassLoader);
+        PluginDetails details = getPluginDetails(pluginClassLoader);
+        if (details == null){
+            pluginClassLoader.close();
+            Logger.warn("Cannot find plugin.json in {}, skip it", pluginFile.getName());
+            return;
+        }
+
+        Class<?> mainClass = findPluginMainClass(pluginClassLoader, details);
         if (mainClass == null) {
-            Logger.warn("Could not find a main class in plugin {}. Make sure one class is annotated with @KirisamePluginInfo.", pluginFile.getName());
             pluginClassLoader.close();
             return;
         }
 
-        KirisamePluginInfo annotation = mainClass.getAnnotation(KirisamePluginInfo.class);
-
-        if (plugins.containsKey(annotation.name())) {
-            Logger.warn("A plugin with the name '{}' is already loaded. Skipping {}.", annotation.name(), pluginFile.getName());
+        if (plugins.containsKey(details.name())) {
+            Logger.warn("A plugin with the name '{}' is already loaded. Skipping {}.", details.name(), pluginFile.getName());
             pluginClassLoader.close();
             return;
         }
 
-        if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(annotation.minecraftVersion())) {
-            Logger.warn("Plugin {} (for MC {}) may not be compatible with this server version ({}).", annotation.name(), annotation.minecraftVersion(), KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion());
+        if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(details.minecraftVersion())) {
+            Logger.warn("Plugin {} (for MC {}) may not be compatible with this server version ({}).", details.name(), details.minecraftVersion(), KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion());
         }
 
         Object object = mainClass.getConstructor().newInstance();
-        PluginLoadInfo info = new PluginLoadInfo(pluginFile, pluginClassLoader, (KirisamePlugin) object,
-                new PluginInfo(annotation.name(), annotation.version(), annotation.author(), annotation.description(), annotation.minecraftVersion()));
+        PluginLoadInfo info = new PluginLoadInfo(pluginFile, pluginClassLoader, (KirisamePlugin) object, details);
 
-        plugins.put(annotation.name(), info);
-        Logger.info("Loaded plugin {} version {} by {}.", info.pluginInfo.name(), info.pluginInfo.version(), info.pluginInfo.author());
+        plugins.put(details.name(), info);
+        Logger.info("Loaded plugin {} version {} by {}.", info.pluginDetails.name(), info.pluginDetails.version(), info.pluginDetails.author());
     }
 
     public static void loadPlugins() {
@@ -167,7 +176,7 @@ public class PluginManager {
             try {
                 info.plugin().onLoad(KirisameMC.getInstance());
             } catch (Exception e) {
-                Logger.error(e, "Error occurred while enabling plugin {}", info.pluginInfo().name());
+                Logger.error(e, "Error occurred while enabling plugin {}", info.pluginDetails().name());
             }
         }
     }
@@ -177,12 +186,12 @@ public class PluginManager {
             try {
                 info.plugin().onUnload(KirisameMC.getInstance());
             } catch (Exception e) {
-                Logger.error(e, "Error occurred while unloading plugin {}", info.pluginInfo().name());
+                Logger.error(e, "Error occurred while unloading plugin {}", info.pluginDetails().name());
             }
             try {
                 info.classLoader().close();
             } catch (IOException e) {
-                Logger.error(e, "Error closing classloader for plugin {}", info.pluginInfo().name());
+                Logger.error(e, "Error closing classloader for plugin {}", info.pluginDetails().name());
             }
         }
         plugins.clear();
@@ -191,9 +200,6 @@ public class PluginManager {
     }
 
     public record PluginLoadInfo(File pluginFile, URLClassLoader classLoader, KirisamePlugin plugin,
-                                 PluginInfo pluginInfo) {
-    }
-
-    public record PluginInfo(String name, String version, String author, String description, String minecraftVersion) {
+                                 PluginDetails pluginDetails) {
     }
 }
