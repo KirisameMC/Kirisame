@@ -106,7 +106,7 @@ public class KirisameMC {
         while (minecraftInstance.isRunning()){
             if (serverThread.isPresent() && serverWatchdogThread.isPresent()){
                 minecraftClassLoader = serverWatchdogThread.get().getContextClassLoader();
-                Logger.info("Successfully Startup KirisameMC Platform!");
+                Logger.info("Successfully Startup KirisameMC!");
                 break;
             }
             Set<Map.Entry<Thread, StackTraceElement[]>> entrySet = Thread.getAllStackTraces().entrySet();

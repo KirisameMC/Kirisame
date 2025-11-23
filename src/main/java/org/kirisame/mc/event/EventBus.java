@@ -59,4 +59,7 @@ public class EventBus {
         }
         return event;
     }
+
+    public record ListenerMethod(Object owner, Method method, int priority) {
+    }
 }
