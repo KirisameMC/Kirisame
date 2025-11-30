@@ -2,17 +2,12 @@ package org.kirisame.mc.agent;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
 import net.bytebuddy.matcher.ElementMatchers;
-import org.kirisame.mc.agent.impl.playerlist.PlayerListTransform;
+import org.kirisame.mc.api.agent.AgentStatus;
 
 import java.lang.instrument.Instrumentation;
-import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.Arrays;
 
 public class Agent {
-    static final List<UnaryOperator<AgentBuilder>> transformers = List.of(
-            PlayerListTransform::apply
-    );
-
     static boolean loaded = false;
 
     public static void premain(String args, Instrumentation inst){
@@ -32,11 +27,18 @@ public class Agent {
                 .ignore(ElementMatchers.nameStartsWith("org.kirisame.mc.agent"))
                 .disableClassFormatChanges();
 
-        for (UnaryOperator<AgentBuilder> transformer : transformers) {
-            builder = transformer.apply(builder);
+        for (Transform transform : TransformList.transformers) {
+            builder = transform.apply(inst, builder);
         }
 
-        builder.installOn(inst);
+        AgentBuilder finalBuilder = builder;
+        new Thread(()->{
+            while (Arrays.stream(inst.getAllLoadedClasses()).anyMatch(c->c.getName().equals("org.kirisame.mc.api.agent.AgentStatus"))){
+                Thread.onSpinWait();
+            }
+            AgentStatus.setBuilder(finalBuilder);
+            AgentStatus.setInst(inst);
+        }).start();
     }
 
 }

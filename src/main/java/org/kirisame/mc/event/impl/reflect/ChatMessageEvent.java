@@ -5,6 +5,7 @@ import lombok.Getter;
 import org.kirisame.mc.event.Event;
 
 @AllArgsConstructor @Getter
-public class PlayerJoinEvent extends Event {
-    final Object serverPlayer;
+public class ChatMessageEvent extends Event {
+    final Object connection;
+    final Object message;
 }

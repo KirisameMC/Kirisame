@@ -6,12 +6,12 @@ import org.kirisame.mc.event.Event;
 
 public class KirisameLoopEvent extends Event {
     @Getter
-    static KirisameLoopEvent instance = new KirisameLoopEvent(KirisameMC.getInstance());
+    final static KirisameLoopEvent instance = new KirisameLoopEvent(KirisameMC.getInstance());
 
     KirisameLoopEvent(KirisameMC kirisameMC) {
         this.kirisameMC = kirisameMC;
     }
 
     @Getter
-    KirisameMC kirisameMC;
+    final KirisameMC kirisameMC;
 }

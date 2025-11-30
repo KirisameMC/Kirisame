@@ -5,6 +5,6 @@ import lombok.Getter;
 import org.kirisame.mc.event.Event;
 
 @AllArgsConstructor @Getter
-public class PlayerJoinEvent extends Event {
-    final Object serverPlayer;
+public class TickEvent extends Event {
+    final Object minecraftServer;
 }

@@ -3,16 +3,23 @@ package cn.catver.kirisame.plugins.example;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.PlayerChatMessage;
+import net.minecraft.network.protocol.game.ClientboundChangeDifficultyPacket;
 import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.Difficulty;
 import org.kirisame.mc.KirisameMC;
 import org.kirisame.mc.api.plugin.KirisamePlugin;
 import org.kirisame.mc.console.message.impl.player.PlayerJoinMessage;
 import org.kirisame.mc.event.EventBus;
 import org.kirisame.mc.event.EventHandler;
 import org.kirisame.mc.event.impl.ConsoleMessageEvent;
+import org.kirisame.mc.event.impl.reflect.ChatMessageEvent;
+import org.kirisame.mc.event.impl.reflect.PlayerJoinEvent;
+import org.kirisame.mc.event.impl.reflect.TickEvent;
 
-public class ExamplePlugin implements KirisamePlugin {
+public class ExamplePlugin extends KirisamePlugin {
     static DedicatedServer server;
 
     @Override
@@ -30,7 +37,6 @@ public class ExamplePlugin implements KirisamePlugin {
                             return 1;
                         })
         );
-        server.getPlayerList().getPlayers().forEach(server.getCommands()::sendCommands);
 
         server.getCommands().getDispatcher().register(LiteralArgumentBuilder.<CommandSourceStack>literal("suicide")
                 .requires(CommandSourceStack::isPlayer)
@@ -59,5 +65,43 @@ public class ExamplePlugin implements KirisamePlugin {
                 }
             }
         });
+    }
+
+    @EventHandler
+    public void _player_join(PlayerJoinEvent event){
+        ServerPlayer serverPlayer = (ServerPlayer) event.getServerPlayer();
+
+        serverPlayer.connection.send(new ClientboundChangeDifficultyPacket(Difficulty.PEACEFUL, false));
+    }
+
+    @EventHandler
+    public void _player_chat(ChatMessageEvent event){
+        ServerGamePacketListenerImpl connection = (ServerGamePacketListenerImpl) event.getConnection();
+        PlayerChatMessage message = (PlayerChatMessage) event.getMessage();
+
+        log$info("Player {} has sent {}.",connection.getPlayer().getName().getString(),message.decoratedContent().getString());
+    }
+
+    long steppedTick = 0;
+
+    long last = -1;
+    float tps = 0;
+    @EventHandler
+    public void _tick(TickEvent event){
+        if (last == -1) last = System.currentTimeMillis();
+        steppedTick++;
+        tps++;
+        if (System.currentTimeMillis() - last >= 1000) {
+            if (TpsOnGuiImpl.getJFrame() != null){
+                TpsOnGuiImpl.getJFrame().setTitle("Kirisame - MinecraftServer - TPS: "+tps);
+            }
+            tps = 0;
+            last = System.currentTimeMillis();
+        }
+    }
+
+    @Override
+    public void onUnload(KirisameMC kirisameMC) {
+        log$info("SteppedTick = {}",steppedTick);
     }
 }
