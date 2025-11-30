@@ -83,9 +83,21 @@ public class ExamplePlugin extends KirisamePlugin {
     }
 
     long steppedTick = 0;
+
+    long last = -1;
+    float tps = 0;
     @EventHandler
     public void _tick(TickEvent event){
+        if (last == -1) last = System.currentTimeMillis();
         steppedTick++;
+        tps++;
+        if (System.currentTimeMillis() - last >= 1000) {
+            if (TpsOnGuiImpl.getJFrame() != null){
+                TpsOnGuiImpl.getJFrame().setTitle("Kirisame - MinecraftServer - TPS: "+tps);
+            }
+            tps = 0;
+            last = System.currentTimeMillis();
+        }
     }
 
     @Override

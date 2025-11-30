@@ -27,10 +27,7 @@ public class AgentMessageBus {
     }
 
     public static Object post(String label,Object message){
-        EventBus.post(new AgentMessageEvent(message,label));
-        return messageHandles.getOrDefault(label, (m)->{
-            Logger.warn("No message handle for label {}",label);
-            return null;
-        }).handle(message);
+        EventBus.post(new AgentMessageEvent(label,message));
+        return messageHandles.getOrDefault(label, (m)-> null).handle(message);
     }
 }

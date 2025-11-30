@@ -8,6 +8,6 @@ import java.lang.instrument.Instrumentation;
 public class ExampleTransform implements KirisameTransform {
     @Override
     public AgentBuilder apply(Instrumentation inst, AgentBuilder builder) {
-        return builder;
+        return TpsOnGuiImpl.transformMinecraftServerGui(builder);
     }
 }

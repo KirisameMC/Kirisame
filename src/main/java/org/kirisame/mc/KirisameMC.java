@@ -6,8 +6,12 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import lombok.Getter;
 import org.apache.commons.io.FileUtils;
+import org.kirisame.mc.api.agent.AgentMessageBus;
 import org.kirisame.mc.console.ConsoleParser;
+import org.kirisame.mc.console.message.impl.ServerStopMessage;
 import org.kirisame.mc.event.EventBus;
+import org.kirisame.mc.event.EventHandler;
+import org.kirisame.mc.event.impl.ConsoleMessageEvent;
 import org.kirisame.mc.event.impl.KirisameLoopEvent;
 import org.kirisame.mc.minecraft.MinecraftInstance;
 import org.kirisame.mc.reflect.ThreadReflect;
@@ -48,6 +52,15 @@ public class KirisameMC {
 
     static {
         new KirisameMC();
+        EventBus.register(KirisameMC.class);
+    }
+
+    @EventHandler
+    private void onShutdown(ConsoleMessageEvent event){
+        if (event.getMessage().getContent() == null) return;
+        if (event.getMessage().getContent() instanceof ServerStopMessage){
+            minecraftInstance.setRunning(false);
+        }
     }
 
     public void _workdir_init(){

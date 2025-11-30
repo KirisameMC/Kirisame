@@ -6,6 +6,6 @@ import org.kirisame.mc.event.Event;
 
 @AllArgsConstructor @Getter
 public class AgentMessageEvent extends Event {
-    final Object message;
     final String label;
+    final Object message;
 }
