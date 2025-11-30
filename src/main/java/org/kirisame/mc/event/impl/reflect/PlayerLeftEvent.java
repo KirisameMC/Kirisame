@@ -4,7 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.kirisame.mc.event.Event;
 
-@AllArgsConstructor @Getter
-public class PlayerJoinEvent extends Event {
+@AllArgsConstructor
+@Getter
+public class PlayerLeftEvent extends Event {
     final Object serverPlayer;
 }

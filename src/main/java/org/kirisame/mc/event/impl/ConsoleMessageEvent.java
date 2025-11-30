@@ -7,5 +7,5 @@ import org.kirisame.mc.event.Event;
 
 @AllArgsConstructor @Getter
 public class ConsoleMessageEvent extends Event {
-    ConsoleMessage message;
+    final ConsoleMessage message;
 }

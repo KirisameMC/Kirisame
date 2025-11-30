@@ -4,5 +4,6 @@
   "version": "1.0.0",
   "description": "Example Plugin",
   "minecraftVersion": "25w45a_unobfuscated",
-  "main": "cn.catver.kirisame.plugins.example.ExamplePlugin"
+  "main": "cn.catver.kirisame.plugins.example.ExamplePlugin",
+  "transform": "cn.catver.kirisame.plugins.example.ExampleTransform"
 }

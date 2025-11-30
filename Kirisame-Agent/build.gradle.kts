@@ -18,7 +18,7 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
 
-    implementation("net.bytebuddy:byte-buddy:1.18.1")
+    implementation("net.bytebuddy:byte-buddy:${rootProject.ext.get("bytebuddy")}")
 
     compileOnly(project(":"))
 }

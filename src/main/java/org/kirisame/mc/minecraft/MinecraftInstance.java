@@ -46,7 +46,7 @@ public class MinecraftInstance {
 
     public void start() throws Exception {
         Class<?> clazz = jarClassLoader.loadClass("net.minecraft.bundler.Main");
-        Logger.info("Reflect Minecraft's main function");
+        Logger.info("Start Minecraft Server....");
         running = true;
         clazz.getMethod("main", String[].class).invoke(null, new Object[]{new String[]{"-nogui"}});
     }

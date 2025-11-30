@@ -6,6 +6,10 @@ plugins {
 group = "org.kirisame.mc"
 version = "1.0.1"
 
+ext {
+    set("bytebuddy","1.18.1")
+}
+
 repositories {
     mavenCentral()
 }
@@ -17,6 +21,8 @@ dependencies {
 
     compileOnly("org.projectlombok:lombok:1.18.42")
     annotationProcessor("org.projectlombok:lombok:1.18.42")
+
+    compileOnly("net.bytebuddy:byte-buddy:${rootProject.ext.get("bytebuddy")}")
 
     //logging
     implementation("org.tinylog:tinylog-api:2.7.0")

@@ -1,20 +1,26 @@
 package org.kirisame.mc;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.experimental.UtilityClass;
+import net.bytebuddy.agent.builder.AgentBuilder;
+import org.jspecify.annotations.Nullable;
+import org.kirisame.mc.api.agent.AgentStatus;
 import org.kirisame.mc.api.plugin.KirisamePlugin;
+import org.kirisame.mc.api.plugin.KirisameTransform;
 import org.kirisame.mc.api.plugin.PluginDetails;
 import org.tinylog.Logger;
 
 import java.io.*;
+import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PluginManager {
     static final Map<String, PluginLoadInfo> plugins = new HashMap<>();
+    static final Map<String, KirisameTransform> transforms = new HashMap<>();
 
     @Getter
     static volatile boolean loaded = false;
@@ -118,8 +124,17 @@ public class PluginManager {
         }
     }
 
+    private static Class<?> findPluginTransform(URLClassLoader classLoader, PluginDetails details) {
+        try {
+            return details.transform() == null ? null : classLoader.loadClass(details.transform());
+        } catch (ClassNotFoundException e) {
+            Logger.error(e, "Transform class {} not found in plugin {}", details.transform(), details.name());
+            return null;
+        }
+    }
+
     @SneakyThrows
-    public static void loadPlugin(File pluginFile) {
+    public static PluginLoadInfo loadPlugin(File pluginFile) {
         // This parent loader can see both Kirisame and Minecraft classes.
         ClassLoader parentLoader = createPluginParentClassLoader();
 
@@ -132,37 +147,51 @@ public class PluginManager {
         if (details == null){
             pluginClassLoader.close();
             Logger.warn("Cannot find plugin.json in {}, skip it", pluginFile.getName());
-            return;
+            return null;
         }
 
         Class<?> mainClass = findPluginMainClass(pluginClassLoader, details);
         if (mainClass == null) {
             pluginClassLoader.close();
-            return;
+            return null;
+        }
+
+        Class<?> transformClass = findPluginTransform(pluginClassLoader, details);
+        PluginTransform pluginTransform = PluginTransform.empty();
+        if (transformClass != null){
+            pluginTransform = new PluginTransform(transformClass,Folder.empty());
         }
 
         if (plugins.containsKey(details.name())) {
             Logger.warn("A plugin with the name '{}' is already loaded. Skipping {}.", details.name(), pluginFile.getName());
             pluginClassLoader.close();
-            return;
+            return null;
         }
 
-        if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(details.minecraftVersion())) {
+        if (details.minecraftVersion() == null){
+            Logger.warn("Plugin {} does not specify a Minecraft version. It may not be compatible with this server version.", details.name());
+        }else if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(details.minecraftVersion())) {
             Logger.warn("Plugin {} (for MC {}) may not be compatible with this server version ({}).", details.name(), details.minecraftVersion(), KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion());
         }
 
-        Object object = mainClass.getConstructor().newInstance();
-        PluginLoadInfo info = new PluginLoadInfo(pluginFile, pluginClassLoader, (KirisamePlugin) object, details);
+        PluginLoadInfo info = new PluginLoadInfo(pluginFile, pluginClassLoader, new PluginMain(mainClass,Folder.empty()), pluginTransform, details);
 
         plugins.put(details.name(), info);
         Logger.info("Loaded plugin {} version {} by {}.", info.pluginDetails.name(), info.pluginDetails.version(), info.pluginDetails.author());
+
+        return info;
     }
 
     public static void loadPlugins() {
         for (File plugin : getPluginsFiles()) {
             if (plugin.isFile() && plugin.getName().endsWith(".jar")) {
                 try {
-                    loadPlugin(plugin);
+                    PluginLoadInfo info = loadPlugin(plugin);
+
+                    if (info != null) {
+                        KirisameTransform transform = info.transform().load();
+                        transforms.put(info.pluginDetails.name(), transform);
+                    }
                 } catch (Exception e) {
                     Logger.error(e, "An unexpected error occurred while loading plugin {}", plugin.getName());
                 }
@@ -174,17 +203,30 @@ public class PluginManager {
     public static void onLoad() {
         for (PluginLoadInfo info : List.copyOf(plugins.values())) {
             try {
-                info.plugin().onLoad(KirisameMC.getInstance());
+                KirisamePlugin plugin = info.plugin.load(info.pluginDetails());
+                plugin.onLoad(KirisameMC.getInstance());
             } catch (Exception e) {
                 Logger.error(e, "Error occurred while enabling plugin {}", info.pluginDetails().name());
             }
         }
     }
 
+    public static void applyTransforms(){
+        for (KirisameTransform transform : transforms.values()) {
+            try {
+                AgentStatus.setBuilder(transform.apply(AgentStatus.getInst(), AgentStatus.getBuilder()));
+            } catch (Exception e) {
+                Logger.error(e, "Error occurred while applying transform {}", transform.getClass().getName());
+            }
+        }
+        AgentStatus.getBuilder().installOn(AgentStatus.getInst());
+        Logger.info("All transforms have been applied.");
+    }
+
     public static void onUnload() {
         for (PluginLoadInfo info : plugins.values()) {
             try {
-                info.plugin().onUnload(KirisameMC.getInstance());
+                info.plugin().get().onUnload(KirisameMC.getInstance());
             } catch (Exception e) {
                 Logger.error(e, "Error occurred while unloading plugin {}", info.pluginDetails().name());
             }
@@ -199,7 +241,72 @@ public class PluginManager {
         Logger.info("All plugins have been unloaded.");
     }
 
-    public record PluginLoadInfo(File pluginFile, URLClassLoader classLoader, KirisamePlugin plugin,
+    public record PluginLoadInfo(File pluginFile, URLClassLoader classLoader, PluginMain plugin, PluginTransform transform,
                                  PluginDetails pluginDetails) {
+    }
+
+    public record PluginMain(Class<?> mainClass, Folder<KirisamePlugin> obj){
+        @SneakyThrows
+        public KirisamePlugin load(PluginDetails details){
+            if (obj.get().isPresent()) return obj.get().get();
+            if (mainClass != null){
+                obj.setObj((KirisamePlugin) mainClass.getConstructor().newInstance());
+                obj.get().get().$set(details);
+            }
+            return obj.get().orElse(null);
+        }
+
+        public KirisamePlugin get(){
+            return obj.get().orElseThrow(() -> new IllegalStateException("Plugin not loaded"));
+        }
+    }
+
+    public record PluginTransform(Class<?> transformClass, Folder<KirisameTransform> obj){
+        static final KirisameTransform defaultTransform = (inst, builder) -> builder;
+
+        public static PluginTransform empty(){
+            return new PluginTransform(null, Folder.empty());
+        }
+        @SneakyThrows
+        public KirisameTransform load(){
+            if (obj.get().isPresent()) return obj.get().get();
+            if (transformClass != null){
+                obj.setObj((KirisameTransform) transformClass.getConstructor().newInstance());
+            }
+            return obj.get().orElse(defaultTransform);
+        }
+        public KirisameTransform get(){
+            return obj.get().orElse(defaultTransform);
+        }
+    }
+
+    public static class Folder<T>{
+        @Setter
+        T obj;
+        public Folder(T obj){
+            this.obj = obj;
+        }
+        public static <S> Folder<S> empty(){
+            return new Folder<S>(null);
+        }
+        public Optional<T> get(){
+            return Optional.ofNullable(obj);
+        }
+    }
+
+    @UtilityClass
+    public class API{
+        public PluginDetails getPluginDetails(String name){
+            return plugins.get(name).pluginDetails();
+        }
+
+        public boolean isPluginLoaded(String name){
+            return plugins.get(name).plugin().obj().get().isPresent();
+        }
+
+        @Nullable
+        public KirisamePlugin getPlugin(String name){
+            return plugins.get(name).plugin().get();
+        }
     }
 }

@@ -85,9 +85,12 @@ public class KirisameMC {
         FileUtils.write(new File("kirisame.config.json"), rendered, StandardCharsets.UTF_8);
     }
 
-    public void _startupMinecraft() throws Exception {
+    public void _loadMinecraft() throws Exception {
         minecraftInstance = new MinecraftInstance();
         minecraftInstance.load();
+    }
+
+    public void _startupMinecraft() throws Exception {
         minecraftInstance.start();
         new Thread(this::KirisameLoop,"KirisameMC").start();
     }
@@ -97,10 +100,11 @@ public class KirisameMC {
     }
 
     public void _init_plugins(){
-        while (minecraftClassLoader == null){
-            Thread.onSpinWait();
-        }
+//        while (minecraftClassLoader == null){
+//            Thread.onSpinWait();
+//        }
         PluginManager.loadPlugins();
+        PluginManager.applyTransforms();
     }
 
     private void KirisameLoop() {
@@ -166,8 +170,9 @@ public class KirisameMC {
         try {
             _workdir_init();
             _config_init();
-            _startupMinecraft();
+            _loadMinecraft();
             _init_plugins();
+            _startupMinecraft();
         }catch (Exception e){
             Logger.error(e,"Start Kirisame Cause a problem");
         }

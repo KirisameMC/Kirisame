@@ -20,6 +20,7 @@ dependencies {
 
     compileOnly(project(":"))
     compileOnly(project(":minecraft-api"))
+    compileOnly("net.bytebuddy:byte-buddy:${rootProject.ext.get("bytebuddy")}")
 
     compileOnly(files("libs/server-25w45a_unobfuscated.jar"))
     compileOnly(files("libs/brigadier-1.3.10.jar"))
