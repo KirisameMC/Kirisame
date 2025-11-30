@@ -90,8 +90,8 @@ public class KirisameMC {
         minecraftInstance.load();
     }
 
-    public void _startupMinecraft() throws Exception {
-        minecraftInstance.start();
+    public void _startupMinecraft(String[] args) throws Exception {
+        minecraftInstance.start(args);
         new Thread(this::KirisameLoop,"KirisameMC").start();
     }
 
@@ -166,13 +166,13 @@ public class KirisameMC {
         return minecraftInstance.isRunning();
     }
 
-    public void init() {
+    public void init(String[] args) {
         try {
             _workdir_init();
             _config_init();
             _loadMinecraft();
             _init_plugins();
-            _startupMinecraft();
+            _startupMinecraft(args);
         }catch (Exception e){
             Logger.error(e,"Start Kirisame Cause a problem");
         }

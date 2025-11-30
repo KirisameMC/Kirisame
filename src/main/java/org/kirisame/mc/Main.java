@@ -68,6 +68,6 @@ public class Main {
 
 
         kirisameMC = KirisameMC.getInstance();
-        kirisameMC.init();
+        kirisameMC.init(args);
     }
 }

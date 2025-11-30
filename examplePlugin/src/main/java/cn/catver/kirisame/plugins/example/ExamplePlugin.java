@@ -17,6 +17,7 @@ import org.kirisame.mc.event.EventHandler;
 import org.kirisame.mc.event.impl.ConsoleMessageEvent;
 import org.kirisame.mc.event.impl.reflect.ChatMessageEvent;
 import org.kirisame.mc.event.impl.reflect.PlayerJoinEvent;
+import org.kirisame.mc.event.impl.reflect.TickEvent;
 
 public class ExamplePlugin extends KirisamePlugin {
     static DedicatedServer server;
@@ -79,5 +80,16 @@ public class ExamplePlugin extends KirisamePlugin {
         PlayerChatMessage message = (PlayerChatMessage) event.getMessage();
 
         log$info("Player {} has sent {}.",connection.getPlayer().getName().getString(),message.decoratedContent().getString());
+    }
+
+    long steppedTick = 0;
+    @EventHandler
+    public void _tick(TickEvent event){
+        steppedTick++;
+    }
+
+    @Override
+    public void onUnload(KirisameMC kirisameMC) {
+        log$info("SteppedTick = {}",steppedTick);
     }
 }

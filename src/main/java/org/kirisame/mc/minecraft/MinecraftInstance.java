@@ -44,11 +44,11 @@ public class MinecraftInstance {
         Logger.info("Found Minecraft Server, version {}",minecraftVersion);
     }
 
-    public void start() throws Exception {
+    public void start(String[] args) throws Exception {
         Class<?> clazz = jarClassLoader.loadClass("net.minecraft.bundler.Main");
         Logger.info("Start Minecraft Server....");
         running = true;
-        clazz.getMethod("main", String[].class).invoke(null, new Object[]{new String[]{"-nogui"}});
+        clazz.getMethod("main", String[].class).invoke(null, new Object[]{args});
     }
 
     public Object getMinecraftServer() throws Exception {
