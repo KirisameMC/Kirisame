@@ -13,7 +13,7 @@ _Low-intrusion plugin framework_
 - **Low-intrusion**
     - 基于java反射与agent字节码注入，对于原版服务端无任何Patch
 - **Powerful-api**
-    - 封装部分常用服务端api，并且可以通过引用依赖直达NMS
+    - 封装部分常用服务端api，并且可以通过引用依赖使用net.minecraft.server方法
 
 ## Usage
 
