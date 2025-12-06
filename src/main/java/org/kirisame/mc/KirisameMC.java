@@ -63,13 +63,13 @@ public class KirisameMC {
         }
     }
 
-    public void _workdir_init(){
+    protected void _workdir_init(){
         if (!new File("kirisame_plugins").isDirectory()){
             new File("kirisame_plugins").mkdirs();
         }
     }
 
-    public void _config_init() throws IOException {
+    protected void _config_init() throws IOException {
         Config resource = ConfigFactory.parseResources("config.json");
         Config file = null;
         try {
@@ -86,7 +86,7 @@ public class KirisameMC {
         _config_save();
     }
 
-    public void _config_save() throws IOException {
+    protected void _config_save() throws IOException {
         String rendered = configRoot.root().render(
                 ConfigRenderOptions.defaults()
                         .setJson(true)
@@ -98,12 +98,12 @@ public class KirisameMC {
         FileUtils.write(new File("kirisame.config.json"), rendered, StandardCharsets.UTF_8);
     }
 
-    public void _loadMinecraft() throws Exception {
+    protected void _loadMinecraft() throws Exception {
         minecraftInstance = new MinecraftInstance();
         minecraftInstance.load();
     }
 
-    public void _startupMinecraft(String[] args) throws Exception {
+    protected void _startupMinecraft(String[] args) throws Exception {
         minecraftInstance.start(args);
         new Thread(this::KirisameLoop,"KirisameMC").start();
     }
@@ -112,7 +112,7 @@ public class KirisameMC {
         consoleParser.parse(line);
     }
 
-    public void _init_plugins(){
+    protected void _init_plugins(){
 //        while (minecraftClassLoader == null){
 //            Thread.onSpinWait();
 //        }
@@ -120,7 +120,7 @@ public class KirisameMC {
         PluginManager.applyTransforms();
     }
 
-    private void KirisameLoop() {
+    protected void KirisameLoop() {
         Optional<Thread> serverThread = Optional.empty();
         Optional<Thread> serverWatchdogThread = Optional.empty();
         while (minecraftInstance.isRunning()){
