@@ -5,6 +5,8 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.kirisame.mc.api.agent.AgentMessageBus;
 import org.kirisame.mc.console.ConsoleParser;
@@ -28,6 +30,7 @@ import java.util.Optional;
 import java.util.Set;
 
 public class KirisameMC {
+    public static final String REBOOT_FLAG = "REBOOT_FLAG.flag";
 
     @Getter
     static KirisameMC instance;
@@ -45,6 +48,24 @@ public class KirisameMC {
     ConsoleParser consoleParser = new ConsoleParser();
     @Getter
     MinecraftWrapper minecraftWrapper;
+
+    @Getter
+    boolean rebootFlag = false;
+
+    @SneakyThrows
+    public void setRebootFlag(boolean flag){
+        rebootFlag = flag;
+
+        if (flag){
+            if (!new File(REBOOT_FLAG).isFile()){
+                new File(REBOOT_FLAG).createNewFile();
+            }
+        }else {
+            if (new File(REBOOT_FLAG).isFile()){
+                new File(REBOOT_FLAG).delete();
+            }
+        }
+    }
 
     {
         instance = this;

@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Launcher {
+    public static final String REBOOT_FLAG = "REBOOT_FLAG.flag";
+
     Config config;
     Config kirisame_need_config;
     Process process;
@@ -73,8 +75,16 @@ public class Launcher {
         process.waitFor();
     }
 
+    public boolean shouldReboot(){
+        return new File(REBOOT_FLAG).isFile();
+    }
+
     public void enter(String[] args){
         init_config();
         startup_kirisame();
+        while (shouldReboot()){
+            Logger.info("KirisameMC is rebooting...");
+            startup_kirisame();
+        }
     }
 }
