@@ -73,15 +73,6 @@ public class KirisameMC {
 
     static {
         new KirisameMC();
-        EventBus.register(KirisameMC.class);
-    }
-
-    @EventHandler
-    private void onShutdown(ConsoleMessageEvent event){
-        if (event.getMessage().getContent() == null) return;
-        if (event.getMessage().getContent() instanceof ServerStopMessage){
-            minecraftInstance.setRunning(false);
-        }
     }
 
     protected void _workdir_init(){
@@ -144,7 +135,8 @@ public class KirisameMC {
     protected void KirisameLoop() {
         Optional<Thread> serverThread = Optional.empty();
         Optional<Thread> serverWatchdogThread = Optional.empty();
-        while (minecraftInstance.isRunning()){
+        Optional<Thread> serverMainThread = Optional.empty();
+        while (minecraftInstance.isRunning() && (serverMainThread.map(Thread::isAlive).orElse(true))){
             if (serverThread.isPresent() && serverWatchdogThread.isPresent()){
                 minecraftClassLoader = serverWatchdogThread.get().getContextClassLoader();
                 Logger.info("Successfully Startup KirisameMC!");
@@ -156,12 +148,15 @@ public class KirisameMC {
                 if (serverThread.isEmpty() && thread.getName().equals("Server thread")){
                     serverThread = Optional.of(thread);
                 }
+                if (serverMainThread.isEmpty() && thread.getName().equals("ServerMain")){
+                    serverMainThread = Optional.of(thread);
+                }
                 if (serverWatchdogThread.isEmpty() && thread.getName().equals("Server Watchdog")){
                     serverWatchdogThread = Optional.of(thread);
                 }
             }
         }
-        getServer:while (checkServerRunning(serverThread.get())){
+        getServer:while (checkServerRunning(serverThread.orElse(null))){
             if (server == null){
                 if (!serverThread.get().isAlive()) {
                     minecraftInstance.setRunning(false);
@@ -183,18 +178,25 @@ public class KirisameMC {
                 }
             }
         }
-        while ((!PluginManager.loaded) && checkServerRunning(serverThread.get())){
+        while ((!PluginManager.loaded) && checkServerRunning(serverThread.orElse(null))){
             Thread.onSpinWait();
         }
-        PluginManager.onLoad();
-        while (checkServerRunning(serverThread.get())){
+        if (checkServerRunning(serverThread.orElse(null))){
+            PluginManager.onLoad();
+        }
+        while (checkServerRunning(serverThread.orElse(null))){
             EventBus.post(KirisameLoopEvent.getInstance());
         }
-        PluginManager.onUnload();
+        if (PluginManager.isLoadedMain()){
+            PluginManager.onUnload();
+        }
     }
 
     private boolean checkServerRunning(Thread server){
-        if (!server.isAlive()){
+        if (server == null){
+            minecraftInstance.setRunning(false);
+        }
+        else if (!server.isAlive()){
             minecraftInstance.setRunning(false);
         }
         return minecraftInstance.isRunning();

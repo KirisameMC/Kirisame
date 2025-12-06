@@ -25,6 +25,12 @@ public class PluginManager {
     @Getter
     static volatile boolean loaded = false;
 
+    @Getter
+    static volatile boolean loadedMain = false;
+
+    @Getter
+    static volatile boolean loadedTransforms = false;
+
     /**
      * Custom ClassLoader for plugins that allows them to access classes from each other.
      * It follows the parent-first model.
@@ -170,7 +176,9 @@ public class PluginManager {
 
         if (details.minecraftVersion() == null){
             Logger.warn("Plugin {} does not specify a Minecraft version. It may not be compatible with this server version.", details.name());
-        }else if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(details.minecraftVersion())) {
+        }
+        else if (details.minecraftVersion().equals("*")){}
+        else if (!KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion().equals(details.minecraftVersion())) {
             Logger.warn("Plugin {} (for MC {}) may not be compatible with this server version ({}).", details.name(), details.minecraftVersion(), KirisameMC.getInstance().getMinecraftInstance().getMinecraftVersion());
         }
 
@@ -209,6 +217,7 @@ public class PluginManager {
                 Logger.error(e, "Error occurred while enabling plugin {}", info.pluginDetails().name());
             }
         }
+        loadedMain = true;
     }
 
     public static void applyTransforms(){
@@ -221,6 +230,7 @@ public class PluginManager {
         }
         AgentStatus.getBuilder().installOn(AgentStatus.getInst());
         Logger.info("All transforms have been applied.");
+        loadedTransforms = true;
     }
 
     public static void onUnload() {
