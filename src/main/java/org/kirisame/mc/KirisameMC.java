@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -165,6 +166,7 @@ public class KirisameMC {
 
     KLoopStatus loopStatus = KLoopStatus.LOOKUP_CLASSLOADER;
 
+    @SneakyThrows
     protected void KirisameLoop() {
         AtomicReference<Optional<Thread>> serverThread = new AtomicReference<>(Optional.empty());
         AtomicReference<Optional<Thread>> serverMain = new AtomicReference<>(Optional.empty());
@@ -198,6 +200,8 @@ public class KirisameMC {
         while (serverMain.get().isEmpty()) Thread.onSpinWait();
 
         while (serverMain.get().get().isAlive()) Thread.onSpinWait();
+
+        Thread.sleep(Duration.ofSeconds(2));
 
         if (serverThread.get().isEmpty()){
             serverThreadGetter.interrupt();
