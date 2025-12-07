@@ -4,6 +4,7 @@ import lombok.experimental.UtilityClass;
 import org.tinylog.Logger;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 @UtilityClass
@@ -22,6 +23,8 @@ public class EventBus {
     private void _register(Object listenerObject, Class<?> clazz) {
         for (Method method : clazz.getDeclaredMethods()) {
             if (!method.isAnnotationPresent(EventHandler.class)) continue;
+
+            if (listenerObject == null && (!Modifier.isStatic(method.getModifiers()))) continue;
 
             Class<?>[] params = method.getParameterTypes();
             if (params.length != 1 || !Event.class.isAssignableFrom(params[0])) continue;

@@ -20,7 +20,7 @@ public class TransformServerGamePacketListenerImpl extends Transform {
         @Advice.OnMethodExit
         public static void intercept(@Advice.This Object connection , @Advice.Argument(0) Object message) {
             try {
-                AgentMessageBus.post("ChatMessage", Map.of("connection", connection, "message", message));
+                AgentMessageBus.post(".ChatMessage", Map.of("connection", connection, "message", message));
             }catch (Exception e){
                 e.printStackTrace();
             }

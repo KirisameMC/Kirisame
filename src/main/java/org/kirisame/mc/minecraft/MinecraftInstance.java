@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import lombok.Getter;
 import lombok.Setter;
 import org.kirisame.mc.KirisameMC;
+import org.kirisame.mc.event.EventBus;
+import org.kirisame.mc.event.impl.ServerExitEvent;
 import org.tinylog.Logger;
 
 import java.io.*;
@@ -18,8 +20,18 @@ public class MinecraftInstance {
     @Getter
     String minecraftVersion;
     @Getter
-    @Setter
     volatile boolean running = false;
+    public void setRunning(boolean running){
+        if (!running && (this.running)){
+            this.running = false;
+            ServerExitEvent event = EventBus.post(new ServerExitEvent());
+            if (event.isCancel()){
+                KirisameMC.getInstance().setRebootFlag(true);
+            }
+        }else 
+            this.running = running;
+    }
+
 
     public MinecraftInstance(){
         jarFileLoc = KirisameMC.getInstance().getConfigRoot().getString("main");

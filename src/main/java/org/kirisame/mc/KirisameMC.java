@@ -5,16 +5,14 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigRenderOptions;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.kirisame.mc.api.agent.AgentMessageBus;
 import org.kirisame.mc.console.ConsoleParser;
-import org.kirisame.mc.console.message.impl.ServerStopMessage;
 import org.kirisame.mc.event.EventBus;
 import org.kirisame.mc.event.EventHandler;
-import org.kirisame.mc.event.impl.ConsoleMessageEvent;
 import org.kirisame.mc.event.impl.KirisameLoopEvent;
+import org.kirisame.mc.event.impl.reflect.AgentMessageEvent;
 import org.kirisame.mc.minecraft.MinecraftInstance;
-import org.kirisame.mc.reflect.ThreadReflect;
 import org.kirisame.mc.server.WrapperFactory;
 import org.kirisame.mc.server.wrapper.MinecraftWrapper;
 import org.tinylog.Logger;
@@ -23,11 +21,12 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class KirisameMC {
+    public static final String REBOOT_FLAG = "REBOOT_FLAG.flag";
 
     @Getter
     static KirisameMC instance;
@@ -41,35 +40,45 @@ public class KirisameMC {
     volatile
     ClassLoader minecraftClassLoader;
     @Getter
-    Object server;
+    volatile Object server;
     ConsoleParser consoleParser = new ConsoleParser();
     @Getter
     MinecraftWrapper minecraftWrapper;
 
+    @Getter
+    boolean rebootFlag = false;
+
+    @SneakyThrows
+    public void setRebootFlag(boolean flag){
+        rebootFlag = flag;
+
+        if (flag){
+            if (!new File(REBOOT_FLAG).isFile()){
+                new File(REBOOT_FLAG).createNewFile();
+            }
+        }else {
+            if (new File(REBOOT_FLAG).isFile()){
+                new File(REBOOT_FLAG).delete();
+            }
+        }
+    }
+
     {
         instance = this;
+        EventBus.register(this);
     }
 
     static {
         new KirisameMC();
-        EventBus.register(KirisameMC.class);
     }
 
-    @EventHandler
-    private void onShutdown(ConsoleMessageEvent event){
-        if (event.getMessage().getContent() == null) return;
-        if (event.getMessage().getContent() instanceof ServerStopMessage){
-            minecraftInstance.setRunning(false);
-        }
-    }
-
-    public void _workdir_init(){
+    protected void _workdir_init(){
         if (!new File("kirisame_plugins").isDirectory()){
             new File("kirisame_plugins").mkdirs();
         }
     }
 
-    public void _config_init() throws IOException {
+    protected void _config_init() throws IOException {
         Config resource = ConfigFactory.parseResources("config.json");
         Config file = null;
         try {
@@ -86,7 +95,7 @@ public class KirisameMC {
         _config_save();
     }
 
-    public void _config_save() throws IOException {
+    protected void _config_save() throws IOException {
         String rendered = configRoot.root().render(
                 ConfigRenderOptions.defaults()
                         .setJson(true)
@@ -98,12 +107,12 @@ public class KirisameMC {
         FileUtils.write(new File("kirisame.config.json"), rendered, StandardCharsets.UTF_8);
     }
 
-    public void _loadMinecraft() throws Exception {
+    protected void _loadMinecraft() throws Exception {
         minecraftInstance = new MinecraftInstance();
         minecraftInstance.load();
     }
 
-    public void _startupMinecraft(String[] args) throws Exception {
+    protected void _startupMinecraft(String[] args) throws Exception {
         minecraftInstance.start(args);
         new Thread(this::KirisameLoop,"KirisameMC").start();
     }
@@ -112,7 +121,7 @@ public class KirisameMC {
         consoleParser.parse(line);
     }
 
-    public void _init_plugins(){
+    protected void _init_plugins(){
 //        while (minecraftClassLoader == null){
 //            Thread.onSpinWait();
 //        }
@@ -120,63 +129,126 @@ public class KirisameMC {
         PluginManager.applyTransforms();
     }
 
-    private void KirisameLoop() {
-        Optional<Thread> serverThread = Optional.empty();
-        Optional<Thread> serverWatchdogThread = Optional.empty();
-        while (minecraftInstance.isRunning()){
-            if (serverThread.isPresent() && serverWatchdogThread.isPresent()){
-                minecraftClassLoader = serverWatchdogThread.get().getContextClassLoader();
-                Logger.info("Successfully Startup KirisameMC!");
-                break;
-            }
-            Set<Map.Entry<Thread, StackTraceElement[]>> entrySet = Thread.getAllStackTraces().entrySet();
-            for (Map.Entry<Thread, StackTraceElement[]> threadEntry : entrySet) {
-                Thread thread = threadEntry.getKey();
-                if (serverThread.isEmpty() && thread.getName().equals("Server thread")){
-                    serverThread = Optional.of(thread);
-                }
-                if (serverWatchdogThread.isEmpty() && thread.getName().equals("Server Watchdog")){
-                    serverWatchdogThread = Optional.of(thread);
-                }
-            }
-        }
-        getServer:while (checkServerRunning(serverThread.get())){
-            if (server == null){
-                if (!serverThread.get().isAlive()) {
-                    minecraftInstance.setRunning(false);
-                    return;
-                }
-                try {
-                    Class<?> loaded = minecraftClassLoader.loadClass("net.minecraft.server.dedicated.ServerWatchdog");
-                    for (Field field : loaded.getDeclaredFields()) {
-                        if (field.getName().equals("server")){
-                            field.setAccessible(true);
-                            Runnable serverwatchdog = ThreadReflect.getRunnable(serverWatchdogThread.get());
-                            server = field.get(serverwatchdog);
-                            minecraftWrapper = WrapperFactory.getWrapper(server,minecraftClassLoader);
-                            break getServer;
-                        }
-                    }
-                }catch (Exception e){
-                    Logger.error(e, "Error when get server instance");
-                }
-            }
-        }
-        while ((!PluginManager.loaded) && checkServerRunning(serverThread.get())){
-            Thread.onSpinWait();
-        }
-        PluginManager.onLoad();
-        while (checkServerRunning(serverThread.get())){
-            EventBus.post(KirisameLoopEvent.getInstance());
-        }
-        PluginManager.onUnload();
+    boolean serverInitSuccessfully = true;
+
+    @EventHandler
+    private void agentMessageListener(AgentMessageEvent event){
+        if (".getServerEvent".equals(event.getLabel())) server = event.getMessage();
+        if (".serverInitEvent".equals(event.getLabel())) serverInitSuccessfully = (boolean) event.getMessage();
     }
 
-    private boolean checkServerRunning(Thread server){
-        if (!server.isAlive()){
-            minecraftInstance.setRunning(false);
+    @SneakyThrows
+    protected boolean getMinecraftServerRunningStatus(Object server){
+        if (server == null) {
+            return false;
         }
-        return minecraftInstance.isRunning();
+
+        final Field f1 = minecraftClassLoader.loadClass("net.minecraft.server.MinecraftServer")
+                .getDeclaredField("running");
+        f1.setAccessible(true);
+
+        final Field f2 = minecraftClassLoader.loadClass("net.minecraft.server.MinecraftServer")
+                .getDeclaredField("stopped");
+        f2.setAccessible(true);
+
+        return f1.getBoolean(server) && !f2.getBoolean(server);
+    }
+
+    enum KLoopStatus{
+        LOOKUP_CLASSLOADER,
+        LOOKUP_SERVER,
+        WAIT_PLUGIN_MANAGER,
+        LOAD_PLUGINS_MAIN,
+        TICK,
+        EXIT
+    }
+
+    KLoopStatus loopStatus = KLoopStatus.LOOKUP_CLASSLOADER;
+
+    protected void KirisameLoop() {
+        AtomicReference<Optional<Thread>> serverThread = new AtomicReference<>(Optional.empty());
+        AtomicReference<Optional<Thread>> serverMain = new AtomicReference<>(Optional.empty());
+
+        Thread serverThreadGetter = new Thread(()->{
+            while (serverThread.get().isEmpty()){
+                Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("Server thread"))
+                        .limit(1)
+                        .findAny()
+                        .ifPresent(t-> serverThread.set(Optional.of(t)));
+                Thread.onSpinWait();
+            }
+        },"ServerThread-Getter");
+
+        serverThreadGetter.start();
+
+         new Thread(() -> {
+            while (serverMain.get().isEmpty()) {
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
+                Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("ServerMain"))
+                        .limit(1)
+                        .findAny()
+                        .ifPresent(t -> serverMain.set(Optional.of(t)));
+                Thread.onSpinWait();
+            }
+        }, "ServerMain-Getter").start();
+
+
+        while (serverMain.get().isEmpty()) Thread.onSpinWait();
+
+        while (serverMain.get().get().isAlive()) Thread.onSpinWait();
+
+        if (serverThread.get().isEmpty()){
+            serverThreadGetter.interrupt();
+            minecraftInstance.setRunning(false);
+            return;
+        }
+
+        minecraftClassLoader = serverThread.get().get().getContextClassLoader();
+        loopStatus = KLoopStatus.LOOKUP_SERVER;
+
+        while (server == null && serverInitSuccessfully) Thread.onSpinWait();
+
+        if (!serverInitSuccessfully){
+            minecraftInstance.setRunning(false);
+            return;
+        }
+
+        minecraftWrapper = WrapperFactory.getWrapper(server,minecraftClassLoader);
+
+        Logger.info("Successfully startup KirisameMC");
+
+        loopStatus = KLoopStatus.WAIT_PLUGIN_MANAGER;
+
+        ml:while (true){
+            if (!getMinecraftServerRunningStatus(server)){
+                loopStatus = KLoopStatus.EXIT;
+            }
+            switch (loopStatus){
+                case WAIT_PLUGIN_MANAGER -> {
+                    while (!PluginManager.isLoaded()) Thread.onSpinWait();
+                    loopStatus = KLoopStatus.LOAD_PLUGINS_MAIN;
+                }
+                case LOAD_PLUGINS_MAIN -> {
+                    PluginManager.onLoad();
+                    loopStatus = KLoopStatus.TICK;
+                }
+                case TICK -> {
+                    EventBus.post(KirisameLoopEvent.getInstance());
+                    if (!getMinecraftServerRunningStatus(server)){
+                        minecraftInstance.setRunning(false);
+                        loopStatus = KLoopStatus.EXIT;
+                    }
+                }
+                case EXIT -> {
+                    if (PluginManager.isLoadedMain()){
+                        PluginManager.onUnload();
+                    }
+                    break ml;
+                }
+            }
+        }
     }
 
     public void init(String[] args) {
