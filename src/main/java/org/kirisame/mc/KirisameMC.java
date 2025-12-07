@@ -171,6 +171,9 @@ public class KirisameMC {
 
         Thread serverThreadGetter = new Thread(()->{
             while (serverThread.get().isEmpty()){
+                if (Thread.currentThread().isInterrupted()) {
+                    break;
+                }
                 Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("Server thread"))
                         .limit(1)
                         .findAny()
@@ -183,9 +186,6 @@ public class KirisameMC {
 
          new Thread(() -> {
             while (serverMain.get().isEmpty()) {
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
                 Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("ServerMain"))
                         .limit(1)
                         .findAny()
