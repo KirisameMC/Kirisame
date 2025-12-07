@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "org.kirisame.mc"
-version = "1.2"
+version = "1.3"
 
 ext {
     set("bytebuddy","1.18.1")
