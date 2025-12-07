@@ -1,6 +1,7 @@
 package org.kirisame.mc.agent.impl;
 
 import net.bytebuddy.agent.builder.AgentBuilder;
+import net.bytebuddy.asm.Advice;
 import net.bytebuddy.asm.AsmVisitorWrapper;
 import net.bytebuddy.description.method.MethodDescription;
 import net.bytebuddy.description.type.TypeDescription;
@@ -61,10 +62,49 @@ public class TransformMinecraftServer extends Transform {
                                 )
                         );
                     }
-                });
+                })
+                .type(ElementMatchers.named("net.minecraft.server.MinecraftServer"))
+                .transform((builder1, typeDescription, classLoader, module, protectionDomain) -> builder1.visit(
+                        new AsmVisitorWrapper.ForDeclaredMethods().method(
+                                ElementMatchers.named("runServer").and(ElementMatchers.isProtected()),
+                                new AsmVisitorWrapper.ForDeclaredMethods.MethodVisitorWrapper() {
+                                    @Override
+                                    public MethodVisitor wrap(TypeDescription instrumentedType, MethodDescription instrumentedMethod, MethodVisitor methodVisitor, Implementation.Context implementationContext, TypePool typePool, int writerFlags, int readerFlags) {
+                                        return new MethodVisitor(Opcodes.ASM9, methodVisitor) {
+                                            @Override
+                                            public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
+                                                if (opcode == Opcodes.PUTFIELD &&
+                                                    owner.equals("net/minecraft/server/MinecraftServer") &&
+                                                    name.equals("status") &&
+                                                    descriptor.equals("Lnet/minecraft/network/protocol/status/ServerStatus;")){
+                                                    super.visitFieldInsn(opcode, owner, name, descriptor);
+
+                                                    super.visitVarInsn(Opcodes.ALOAD,0);
+                                                    super.visitMethodInsn(
+                                                            Opcodes.INVOKESTATIC,
+                                                            "org/kirisame/mc/agent/impl/TransformMinecraftServer",
+                                                            "afterInitServer",
+                                                            "(Ljava/lang/Object;)V",
+                                                            false
+                                                    );
+
+                                                    return;
+                                                }
+                                                super.visitFieldInsn(opcode, owner, name, descriptor);
+                                            }
+                                        };
+                                    }
+                                }
+                        )
+                ))
+                ;
+    }
+
+    public static void afterInitServer(Object minecraftServer){
+        AgentMessageBus.post(".getServerEvent",minecraftServer);
     }
 
     public static void afterTickChildren(Object minecraftServer){
-        AgentMessageBus.post("Tick",minecraftServer);
+        AgentMessageBus.post(".Tick",minecraftServer);
     }
 }

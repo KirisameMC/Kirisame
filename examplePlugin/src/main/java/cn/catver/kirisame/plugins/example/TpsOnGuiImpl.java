@@ -65,7 +65,7 @@ public class TpsOnGuiImpl {
                                                     super.visitInsn(Opcodes.DUP);
 
                                                     super.visitLdcInsn("E-GetJFrame");
-                                                    super.visitVarInsn(Opcodes.ALOAD, 1);
+                                                    super.visitVarInsn(Opcodes.ALOAD, varIndex);
 
                                                     super.visitMethodInsn(Opcodes.INVOKESPECIAL,
                                                             "org/kirisame/mc/event/impl/reflect/AgentMessageEvent",

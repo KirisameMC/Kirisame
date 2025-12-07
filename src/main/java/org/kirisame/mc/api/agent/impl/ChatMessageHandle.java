@@ -7,7 +7,7 @@ import org.kirisame.mc.event.impl.reflect.ChatMessageEvent;
 
 import java.util.Map;
 
-@AgentMessageLabel(name = "ChatMessage")
+@AgentMessageLabel(name = ".ChatMessage")
 public class ChatMessageHandle implements AgentMessageHandle {
     @Override
     public Object handle(Object message) {

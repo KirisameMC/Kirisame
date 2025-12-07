@@ -5,7 +5,7 @@ import org.kirisame.mc.api.agent.AgentMessageLabel;
 import org.kirisame.mc.event.EventBus;
 import org.kirisame.mc.event.impl.reflect.PlayerLeftEvent;
 
-@AgentMessageLabel(name = "PlayerLeft")
+@AgentMessageLabel(name = ".PlayerLeft")
 public class PlayerLeftHandle implements AgentMessageHandle {
     @Override
     public Object handle(Object message) {
