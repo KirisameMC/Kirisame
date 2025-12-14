@@ -14,10 +14,10 @@ public class AgentMessageBus {
 
     static {
         try (ScanResult scanResult = new ClassGraph().enableAnnotationInfo().scan()){
-            ClassInfoList classes = scanResult.getClassesWithAnnotation(AgentMessageLabel.class);
+            ClassInfoList classes = scanResult.getClassesWithAnnotation(AgentMessageAnnotation.class);
             for (Class<?> loadClass : classes.loadClasses()) {
                 try {
-                    AgentMessageLabel annotation = loadClass.getAnnotation(AgentMessageLabel.class);
+                    AgentMessageAnnotation annotation = loadClass.getAnnotation(AgentMessageAnnotation.class);
                     messageHandles.put(annotation.name(), (AgentMessageHandle) loadClass.getConstructor().newInstance());
                 } catch (Exception e) {
                     Logger.error(e, "Error when loading message handle {}",loadClass.getName());

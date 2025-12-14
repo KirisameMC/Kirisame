@@ -31,7 +31,7 @@ public class TransformDedicatedServer extends Transform {
     static class initServerExitAdvice {
         @Advice.OnMethodExit
         public static void afterInitServer(@Advice.Return boolean status){
-            AgentMessageBus.post(".serverInitEvent",status);
+            AgentMessageBus.post(".serverInitReturn",status);
         }
     }
 }

@@ -101,7 +101,7 @@ public class TransformMinecraftServer extends Transform {
     }
 
     public static void afterInitServer(Object minecraftServer){
-        AgentMessageBus.post(".getServerEvent",minecraftServer);
+        AgentMessageBus.post(".serverStart",minecraftServer);
     }
 
     public static void afterTickChildren(Object minecraftServer){

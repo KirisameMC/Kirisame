@@ -43,9 +43,9 @@ public class KirisameMC {
     @Getter
     volatile Object server;
     ConsoleParser consoleParser = new ConsoleParser();
+    Thread kirisameLoop = new Thread(this::KirisameLoop, "KirisameLoop");
     @Getter
     MinecraftWrapper minecraftWrapper;
-
     @Getter
     boolean rebootFlag = false;
 
@@ -115,27 +115,26 @@ public class KirisameMC {
 
     protected void _startupMinecraft(String[] args) throws Exception {
         minecraftInstance.start(args);
-        new Thread(this::KirisameLoop,"KirisameMC").start();
-    }
-
-    public void consoleProcesser(String line){
-        consoleParser.parse(line);
     }
 
     protected void _init_plugins(){
-//        while (minecraftClassLoader == null){
-//            Thread.onSpinWait();
-//        }
         PluginManager.loadPlugins();
         PluginManager.applyTransforms();
     }
 
-    boolean serverInitSuccessfully = true;
-
     @EventHandler
     private void agentMessageListener(AgentMessageEvent event){
-        if (".getServerEvent".equals(event.getLabel())) server = event.getMessage();
-        if (".serverInitEvent".equals(event.getLabel())) serverInitSuccessfully = (boolean) event.getMessage();
+        if (event.getLabel().equals(".serverInitReturn")){
+            boolean success = (boolean) event.getMessage();
+            if (success){
+                Logger.info("Server init successfully!");
+            }else {
+                Logger.warn("Server init failed!");
+            }
+        } else if (event.getLabel().equals(".serverStart")) {
+            server = event.getMessage();
+            kirisameLoop.start();
+        }
     }
 
     @SneakyThrows
@@ -157,7 +156,6 @@ public class KirisameMC {
 
     enum KLoopStatus{
         LOOKUP_CLASSLOADER,
-        LOOKUP_SERVER,
         WAIT_PLUGIN_MANAGER,
         LOAD_PLUGINS_MAIN,
         TICK,
@@ -169,55 +167,14 @@ public class KirisameMC {
     @SneakyThrows
     protected void KirisameLoop() {
         AtomicReference<Optional<Thread>> serverThread = new AtomicReference<>(Optional.empty());
-        AtomicReference<Optional<Thread>> serverMain = new AtomicReference<>(Optional.empty());
-
-        Thread serverThreadGetter = new Thread(()->{
-            while (serverThread.get().isEmpty()){
-                if (Thread.currentThread().isInterrupted()) {
-                    break;
-                }
-                Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("Server thread"))
-                        .limit(1)
-                        .findAny()
-                        .ifPresent(t-> serverThread.set(Optional.of(t)));
-                Thread.onSpinWait();
-            }
-        },"ServerThread-Getter");
-
-        serverThreadGetter.start();
-
-         new Thread(() -> {
-            while (serverMain.get().isEmpty()) {
-                Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("ServerMain"))
-                        .limit(1)
-                        .findAny()
-                        .ifPresent(t -> serverMain.set(Optional.of(t)));
-                Thread.onSpinWait();
-            }
-        }, "ServerMain-Getter").start();
-
-
-        while (serverMain.get().isEmpty()) Thread.onSpinWait();
-
-        while (serverMain.get().get().isAlive()) Thread.onSpinWait();
-
-        Thread.sleep(Duration.ofSeconds(2));
-
-        if (serverThread.get().isEmpty()){
-            serverThreadGetter.interrupt();
-            minecraftInstance.setRunning(false);
-            return;
+        while (serverThread.get().isEmpty()){
+            Thread.getAllStackTraces().keySet().stream().filter(t -> t.getName().equals("Server thread"))
+                    .limit(1)
+                    .findAny()
+                    .ifPresent(t-> serverThread.set(Optional.of(t)));
         }
 
         minecraftClassLoader = serverThread.get().get().getContextClassLoader();
-        loopStatus = KLoopStatus.LOOKUP_SERVER;
-
-        while (server == null && serverInitSuccessfully) Thread.onSpinWait();
-
-        if (!serverInitSuccessfully){
-            minecraftInstance.setRunning(false);
-            return;
-        }
 
         minecraftWrapper = WrapperFactory.getWrapper(server,minecraftClassLoader);
 

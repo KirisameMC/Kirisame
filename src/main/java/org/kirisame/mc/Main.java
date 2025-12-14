@@ -27,7 +27,7 @@ public class Main {
                     String line = lineBuffer.toString();
                     lineBuffer.setLength(0);
                     if (kirisameMC != null)
-                        kirisameMC.consoleProcesser(line);
+                        kirisameMC.consoleParser.parse(line);
                 }
             }
         };
